@@ -5,6 +5,6 @@
   "scripts": {
     "lint": "node scripts/lint.mjs",
     "build": "node --check src/slugify.mjs",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.mjs"
   }
 }
