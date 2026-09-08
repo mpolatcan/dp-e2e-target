@@ -1,0 +1,10 @@
+{
+  "name": "dp-e2e-target",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/lint.mjs",
+    "build": "node --check src/slugify.mjs",
+    "test": "node --test test/"
+  }
+}
