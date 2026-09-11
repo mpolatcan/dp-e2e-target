@@ -7,6 +7,7 @@ export function slugify(input) {
     .replace(/^-+|-+$/g, '')
 }
 
+// contract: wrapping reviewed
 export function wordWrap(text, width) {
   const words = String(text).split(/\s+/).filter(Boolean)
   const lines = []
