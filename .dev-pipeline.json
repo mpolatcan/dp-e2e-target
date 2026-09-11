@@ -13,5 +13,8 @@
   "branch": {
     "baseBranch": "develop",
     "maxAttempts": 4
+  },
+  "claudeMd": {
+    "revise": true
   }
 }
