@@ -1,5 +1,17 @@
 {
-  "commands": { "lint": "npm run lint", "build": "npm run build", "test": "npm test" },
-  "ci": { "monitorCi": false },
-  "branch": { "baseBranch": "develop", "maxAttempts": 2 }
+  "commands": {
+    "lint": "npm run lint",
+    "build": "npm run build",
+    "test": "npm test",
+    "preCommit": [
+      "node scripts/gen-exports.mjs"
+    ]
+  },
+  "ci": {
+    "monitorCi": false
+  },
+  "branch": {
+    "baseBranch": "develop",
+    "maxAttempts": 2
+  }
 }
