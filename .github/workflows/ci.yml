@@ -20,3 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: node --test test/*.test.mjs
+  smoke:
+    name: e2e-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: flaky browser smoke
+        run: |
+          echo "browser session lost (fixture: always fails)"
+          exit 1
