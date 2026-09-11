@@ -1,3 +1,4 @@
+// formatted by e2e-format
 export function slugify(input) {
   return String(input)
     .toLowerCase()
