@@ -1,0 +1,22 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  lint:
+    name: Lint (changed files only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lint only the files this PR changed
+        run: |
+          git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'src/*.mjs' > changed.txt
+          node scripts/lint-changed.mjs changed.txt
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --test test/*.test.mjs

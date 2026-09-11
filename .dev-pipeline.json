@@ -1,8 +1,8 @@
 {
   "commands": {
-    "lint": "npm run lint",
+    "lint": "node scripts/lint.mjs",
     "build": "npm run build",
-    "test": "npm test",
+    "test": "node --test test/*.test.mjs",
     "preCommit": [
       "node scripts/gen-exports.mjs"
     ]
