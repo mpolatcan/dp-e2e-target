@@ -12,6 +12,6 @@
   },
   "branch": {
     "baseBranch": "develop",
-    "maxAttempts": 2
+    "maxAttempts": 4
   }
 }
