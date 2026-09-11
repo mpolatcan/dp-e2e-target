@@ -1,0 +1,43 @@
+# Two audits that run only in CI, chained so that they fail one at a time.
+#
+# The local suite cannot see either of them. That is the point: a check the Develop stage's own
+# lint/build/test self-check can reach is fixed inside that stage and never reaches a gate, so it
+# can never give consecutive attempts different feedback.
+#
+# `docs-audit` needs `contract-audit`, so the second failure only becomes visible once the first is
+# fixed. Each attempt therefore learns exactly one new thing.
+name: Wrap audit
+
+on:
+  pull_request:
+
+jobs:
+  contract-audit:
+    name: Contract audit
+    if: startsWith(github.head_ref, 'feature/WRAP')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: every wrapping helper carries the reviewed marker
+        run: |
+          if ! grep -q '// contract: wrapping reviewed' src/slugify.mjs; then
+            echo "src/slugify.mjs must carry the line '// contract: wrapping reviewed' directly above"
+            echo "the wrapping helper. The repository requires that marker on any helper that breaks"
+            echo "text into lines, so a reviewer can see the wrapping contract was considered."
+            exit 1
+          fi
+
+  docs-audit:
+    name: Docs audit
+    needs: contract-audit
+    if: startsWith(github.head_ref, 'feature/WRAP')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: public helpers are listed in README.md
+        run: |
+          if [ ! -f README.md ] || ! grep -q 'wordWrap' README.md; then
+            echo "README.md must exist and document every exported helper under a '## Helpers'"
+            echo "heading, one bullet per helper naming it and its arguments. wordWrap is missing."
+            exit 1
+          fi
