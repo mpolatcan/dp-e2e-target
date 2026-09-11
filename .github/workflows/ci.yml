@@ -20,14 +20,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: node --test test/*.test.mjs
+  # Fixture jobs. Both are scoped to branches whose name starts with "feature/CIFX", so the
+  # arming is per-run and self-clearing: an unrelated pull request never sees these checks.
   smoke:
-    # Opt-in fixture: runs only while the repository variable CI_FIXTURE_SMOKE is "1", so an
-    # unrelated pull request never inherits a red check it cannot clear.
+    # Deliberately red, and named to match the automation/e2e name class the pipeline mutes.
     name: E2E smoke
-    if: vars.CI_FIXTURE_SMOKE == '1'
+    if: startsWith(github.head_ref, 'feature/CIFX')
     runs-on: ubuntu-latest
     steps:
       - name: deterministic smoke failure (fixture)
         run: |
           echo "browser session lost (fixture: fails on purpose)"
+          exit 1
+  contract:
+    # Deliberately red, with a neutral name no name-class rule matches. It is excluded only by
+    # NOT being in the repository's required-check set, which is the distinct mechanism under test.
+    name: Contract check
+    if: startsWith(github.head_ref, 'feature/CIFX')
+    runs-on: ubuntu-latest
+    steps:
+      - name: deterministic contract failure (fixture)
+        run: |
+          echo "contract mismatch: expected v2 payload (fixture: fails on purpose)"
           exit 1
