@@ -24,9 +24,11 @@ jobs:
   # arming is per-run and self-clearing: an unrelated pull request never sees these checks.
   smoke:
     # Deliberately red, and named to match the automation/e2e name class the pipeline mutes.
-    # Also armed on feature/CIMUTE-*, the branch prefix used to isolate the name-class mute: there
-    # the repository ruleset is disabled, so the required set resolves empty and the mute is the
-    # only mechanism that can keep this red check from gating the run.
+    # Also armed on feature/CIMUTE-*, the branch prefix used to isolate the name-class mute. That
+    # isolation additionally requires the repository ruleset to be disabled at run time, so the
+    # required set resolves empty and the mute is the only mechanism that can keep this red check
+    # from gating the run. The ruleset state is not expressed in this file and is not guaranteed by
+    # it: check it before trusting a CIMUTE run as proof of the mute.
     name: E2E smoke
     if: startsWith(github.head_ref, 'feature/CIFX') || startsWith(github.head_ref, 'feature/CIMUTE')
     runs-on: ubuntu-latest

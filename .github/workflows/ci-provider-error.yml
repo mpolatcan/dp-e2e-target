@@ -7,6 +7,16 @@ name: CI provider error
 # shows the job never started. A workflow that simply exits 1 produces a check run with a log,
 # which is a different thing entirely.
 #
+# Three properties are load-bearing, and getting any of them wrong makes the fixture pass for the
+# wrong reason:
+#   1. The status carries NO target_url. A URL pointing at a green Actions run tells the classifier
+#      the job did start, which is the opposite of what this fixture asserts.
+#   2. The context name matches no built-in mute class — no 'e2e', 'smoke' or 'automation'
+#      substring — or the check is muted before the pre-execution carve-out is ever reached.
+#      Note the repository slug itself contains 'e2e', so it must not appear in the context.
+#   3. The job name carries no verdict semantics, since the job itself goes green and would
+#      otherwise post a second, contradictory signal about the same event.
+#
 # An earlier version of this fixture called a reusable workflow that does not exist, to produce a
 # real startup failure. That shape cannot be branch-scoped: the reference is resolved when the
 # workflow file is parsed, so it failed on every pull request in the repository, including ones
@@ -18,7 +28,7 @@ permissions:
 
 jobs:
   provider-error:
-    name: Post provider error status
+    name: fixture arm
     if: startsWith(github.head_ref, 'feature/CIINFRA')
     runs-on: ubuntu-latest
     steps:
@@ -28,6 +38,5 @@ jobs:
         run: |
           gh api -X POST "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
             -f state=failure \
-            -f context='AWS CodeBuild eu-west-1 (dp-e2e-target-unit-test)' \
-            -f description='Unable to assume role for build. Either the role does not exist or does not have enough permissions to trust CodeBuild.' \
-            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            -f context='AWS CodeBuild eu-west-1 (payload-service-unit-test)' \
+            -f description='Unable to assume role for build. Either the role does not exist or does not have enough permissions to trust CodeBuild.'
