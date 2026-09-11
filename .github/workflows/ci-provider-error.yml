@@ -1,0 +1,33 @@
+name: CI provider error
+
+# Fixture for the pre-execution provider-error shape, scoped to "feature/CIINFRA" branches.
+#
+# It posts a failing COMMIT STATUS rather than failing a job, because that is the shape the
+# ticket is about: a bare commit status with no Actions run id and no annotations, whose payload
+# shows the job never started. A workflow that simply exits 1 produces a check run with a log,
+# which is a different thing entirely.
+#
+# An earlier version of this fixture called a reusable workflow that does not exist, to produce a
+# real startup failure. That shape cannot be branch-scoped: the reference is resolved when the
+# workflow file is parsed, so it failed on every pull request in the repository, including ones
+# that have nothing to do with this fixture. Hence the commit-status approach.
+on: [pull_request]
+
+permissions:
+  statuses: write
+
+jobs:
+  provider-error:
+    name: Post provider error status
+    if: startsWith(github.head_ref, 'feature/CIINFRA')
+    runs-on: ubuntu-latest
+    steps:
+      - name: post a QUEUED-phase role-assumption denial as a bare commit status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -f state=failure \
+            -f context='AWS CodeBuild eu-west-1 (dp-e2e-target-unit-test)' \
+            -f description='Unable to assume role for build. Either the role does not exist or does not have enough permissions to trust CodeBuild.' \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
