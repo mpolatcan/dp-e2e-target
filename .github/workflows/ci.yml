@@ -24,8 +24,11 @@ jobs:
   # arming is per-run and self-clearing: an unrelated pull request never sees these checks.
   smoke:
     # Deliberately red, and named to match the automation/e2e name class the pipeline mutes.
+    # Also armed on feature/CIMUTE-*, the branch prefix used to isolate the name-class mute: there
+    # the repository ruleset is disabled, so the required set resolves empty and the mute is the
+    # only mechanism that can keep this red check from gating the run.
     name: E2E smoke
-    if: startsWith(github.head_ref, 'feature/CIFX')
+    if: startsWith(github.head_ref, 'feature/CIFX') || startsWith(github.head_ref, 'feature/CIMUTE')
     runs-on: ubuntu-latest
     steps:
       - name: deterministic smoke failure (fixture)
@@ -35,6 +38,7 @@ jobs:
   contract:
     # Deliberately red, with a neutral name no name-class rule matches. It is excluded only by
     # NOT being in the repository's required-check set, which is the distinct mechanism under test.
+    # Stays CIFX-only: on a CIMUTE branch the smoke job must be the sole failing check.
     name: Contract check
     if: startsWith(github.head_ref, 'feature/CIFX')
     runs-on: ubuntu-latest
