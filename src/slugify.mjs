@@ -7,6 +7,7 @@ export function slugify(input) {
     .replace(/^-+|-+$/g, '')
 }
 
+// audit: publication reviewed
 export function truncateWords(text, maxWords) {
   if (maxWords < 1) return ''
   const words = String(text).split(/\s+/).filter(Boolean)
