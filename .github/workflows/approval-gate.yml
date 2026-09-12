@@ -1,0 +1,97 @@
+# A pull request that carries BOTH a check waiting on a human approval AND a check that is red
+# because of the branch's own code.
+#
+# The approval job sits in the `release-approval` environment, which today has a required-reviewer
+# rule, so its check stays waiting until somebody approves it. The audit job is red until the branch
+# adds the marker it asks for, and it runs only in CI, so the Develop stage's own lint/build/test
+# self-check cannot see it and cannot fix it without reading the check's feedback.
+#
+# Together they describe the case where a run must not report success: the waiting approval is an
+# infrastructure condition, but the red audit is evidence about the code, and evidence decides.
+#
+# TWO DEPENDENCIES LIVE IN REPOSITORY SETTINGS, NOT IN THIS FILE. Verify both before trusting a run
+# on a feature/APPROVE branch as proof of anything:
+#
+#   1. Whether these checks gate at all. The pipeline gates on the repository's REQUIRED checks and
+#      treats everything else as informational; it falls back to gating on every check only when the
+#      repository declares no required set. Ruleset `require-checks` (id 22915189) declares only
+#      `Unit tests`, so while that ruleset is ACTIVE both jobs below are informational and a run
+#      ends green with the audit still red.
+#
+#      Both ways to arm these checks change repository-wide settings, and NEITHER clears itself. The
+#      other fixtures in this directory arm and disarm through a branch-prefix `if:` and mutate no
+#      settings at all; this one cannot. Whichever option you take, restoring the setting afterwards
+#      is a manual step you must not skip.
+#
+#      Option A, preferred: disable the ruleset for the measurement so the all-checks fallback
+#      applies, then re-enable it.
+#
+#        gh api -X PUT repos/mpolatcan/dp-e2e-target/rulesets/22915189 -f enforcement=disabled
+#        # ... run the measurement ...
+#        gh api -X PUT repos/mpolatcan/dp-e2e-target/rulesets/22915189 -f enforcement=active
+#
+#      While the ruleset is disabled, refs/heads/develop has NO required check at all, and the
+#      pipeline's all-checks fallback gates every other fixture's pull request on every check it
+#      posts. Run the measurement alone and re-enable the ruleset as soon as it ends.
+#
+#      Option B: add `Release approval` and `Publication audit` to the ruleset's required set. A job
+#      that a job-level `if:` skips still posts its context with conclusion `skipped`, which
+#      satisfies a required check, so this does not strand the other fixtures' pull requests. It is
+#      rejected only because it leaves develop carrying two extra required contexts that look
+#      permanent, so an unreverted Option B is much harder to notice than an unreverted Option A.
+#   2. Whether the approval actually waits. The `release-approval` environment must keep its
+#      required-reviewer rule, and it must carry NO deployment branch policy at all. A
+#      pull_request-triggered job deploys from `refs/pull/<n>/merge`, which no branch-name policy can
+#      match, so any policy fails the job at once with "Branch is not allowed to deploy to
+#      release-approval due to environment protections" instead of parking it for a reviewer. That
+#      turns the waiting half of the fixture into a second red check and destroys what it measures.
+#      Without the required-reviewer rule the job goes green at once and the waiting half disappears
+#      while this comment still claims it is armed.
+name: Approval gate
+
+# One waiting run per pull request. An environment-gated job parks until a reviewer answers, and
+# without this a re-push would leave the superseded run — and its approval request — waiting for 30
+# days. On `pull_request` the ref is `refs/pull/<n>/merge`, so this group is per pull request rather
+# than per branch, which is the intended scope here.
+#
+# A cancellation leaves both checks reporting `cancelled` until the new run posts fresh contexts. A
+# run that re-pushes — the pipeline does this when it acts on the red audit — therefore shows a
+# third conclusion for a few seconds that is neither the waiting approval nor the red audit. Do not
+# read a poll that lands in that window as the fixture's signal.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+
+jobs:
+  release-approval:
+    name: Release approval
+    if: startsWith(github.head_ref, 'feature/APPROVE')
+    runs-on: ubuntu-latest
+    environment: release-approval
+    steps:
+      - name: record the approval
+        run: echo "approved"
+
+  publication-audit:
+    name: Publication audit
+    if: startsWith(github.head_ref, 'feature/APPROVE')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: every published helper carries the reviewed marker
+        run: |
+          if [ ! -f src/slugify.mjs ]; then
+            echo "src/slugify.mjs is missing. This audit reads that exact path, so a helper that moved"
+            echo "or was renamed must keep src/slugify.mjs in place, or this workflow must name the"
+            echo "new path instead."
+            exit 1
+          fi
+          if ! grep -q '// audit: publication reviewed' src/slugify.mjs; then
+            echo "src/slugify.mjs must carry the line '// audit: publication reviewed' directly above"
+            echo "the exported helper. The repository requires that marker on any helper it publishes,"
+            echo "so a reviewer can see the publication contract was considered."
+            exit 1
+          fi
