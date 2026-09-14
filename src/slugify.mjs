@@ -5,3 +5,10 @@ export function slugify(input) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 }
+
+export function truncateWords(text, maxWords) {
+  if (maxWords < 1) return ''
+  const words = String(text).trim().split(/\s+/).filter(Boolean)
+  if (words.length <= maxWords) return words.join(' ')
+  return words.slice(0, maxWords).join(' ') + '…'
+}
